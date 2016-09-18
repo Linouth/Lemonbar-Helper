@@ -18,7 +18,11 @@ class Base:
         self.output = ''
 
     def __call__(self):
-        if time() >= self.__prevtime + self.__interval:
+        if self.__interval == -1:
+            if self.__prevtime != -1:
+                self.update()
+                self.__prevtime = -1
+        elif time() >= self.__prevtime + self.__interval:
             self.update()
             self.__prevtime = time()
 
@@ -45,8 +49,12 @@ class Align:
 
 
 class Clock(Base):
+    def __init__(self, layout='%d %b %Y %H:%M:%S', **kwds):
+        super().__init__(**kwds)
+        self.layout = layout
+
     def update(self):
-        self.output = datetime.today().strftime('%d %b %Y %H:%M:%S')
+        self.output = datetime.today().strftime(self.layout)
 
 
 class Volume(Base):
@@ -61,19 +69,26 @@ class ActiveWindow(Base):
 
 
 class Workspaces(Base):
-    def __init__(self, activeIco='|', inactiveIco='-', **kwds):
+    def __init__(self, activeIco='|', inactiveIco='-', monitor=None, **kwds):
         super().__init__(**kwds)
         self.activeIco = activeIco
         self.inactiveIco = inactiveIco
+        self.monitor = monitor
 
     def update(self):
         self.output = ''
-        ws = self.i3.get_workspaces()
-        for w in ws:
-            if w['focused']:
-                self.output += self.activeIco
-            else:
-                self.output += self.inactiveIco
+
+        if not self.monitor:
+            ws = self.i3.get_workspaces()
+            for w in ws:
+                if w['focused']:
+                    self.output += self.activeIco
+                else:
+                    self.output += self.inactiveIco
+        else:
+            for mon in self.i3.get_outputs():
+                if mon['name'] == self.monitor:
+                    self.output = mon['current_workspace']
 
 
 class Weather(Base):
@@ -93,3 +108,12 @@ class Weather(Base):
             res = urlopen(self.apiurl.format(**self.parameters))
             data = json.loads(res.read().decode())
             self.output = round(data['main']['temp'], 1)
+
+
+class Static(Base):
+    def __init__(self, text='', interval=-1, **kwds):
+        super().__init__(interval=interval, **kwds)
+        self.text = text
+
+    def update(self):
+        self.output = self.text
