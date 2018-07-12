@@ -1,0 +1,49 @@
+lemonbar:
+    offset:
+        x: 0
+        y: 0
+    dimensions:
+        w: 3200
+        h: 40
+
+    fonts:
+        -
+            str: 'Hack:size=10'
+            offset: -8
+        -
+            str: 'Knack Nerd Font Mono:size=16'
+            offset: 1
+
+    xresources: False
+    colors:
+        foreground: '#fff'
+        background: '#000'
+        highlights: '#fff'
+
+    underline_thickness: 2
+    update_interval: 0.5
+
+
+blocks:
+    left:
+        workspaces: 
+            style: 'dots'
+            background: 'fg'
+            foreground: 'bg'
+            display: 'eDP1'
+            icons:
+                empty: 'o'
+                nonempty: 'x'
+                active: 'x'
+        music:
+            icon: 'p'
+
+    center:
+        datetime:
+            format: '...'
+
+    right:
+        wifi: 'config'
+        volume: 'config'
+        memory: 'config'
+        battery: 'config'
