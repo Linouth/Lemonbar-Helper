@@ -126,10 +126,10 @@ class WorkspacesDots(Widget):
         self.underline = underline
 
     def update(self):
-        out = [self.icons['empty'] for __ in range(9)]
+        out = [self.icons['empty'] for __ in range(10)]
         for workspace in self.i3.get_workspaces():
             ind = int(workspace['num']) - 1
-            if ind < 0: ind = 10
+            if ind < 0: ind = 9
             
             if workspace['visible']:
                 out[ind] = self.icons['visible']
@@ -229,7 +229,7 @@ class Battery(Widget):
 
         with open('/sys/class/power_supply/{}/capacity'\
                   .format(self.power_supply), 'r') as f:
-            capacity = f.read()
+            capacity = f.read().strip()
 
         if charging:
             self.output = '{} '.format(self.icons['charging'])
@@ -248,4 +248,3 @@ class Wifi(Widget):
         for l in ssid.split(b'\n\t'):
             if l.startswith(b'ssid'):
                 self.output = l[5:].decode()
-    
