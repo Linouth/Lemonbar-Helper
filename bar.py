@@ -44,19 +44,40 @@ class Bar:
         #     block.background = self.__background
 
         # if block.is_callback_block:
-        if False:
-            self.callback_blocks.append(block)
-        else:
-            self.blocks.append(block)
+        #     self.callback_blocks.append(block)
+        # else:
+        self.blocks.append(block)
 
     def add_blocks(self, blocks):
         for block in blocks:
             self.add_block(block)
 
+    def add_blocks_from_config(self, config):
+        align = ['left', 'center', 'right']
+
+        for a in align:
+            if config.get(a):
+                self.add_block(blocks.Align(a[0]))
+                for block, bc in config[a].items():
+                    try:
+                        block = getattr(blocks, block)
+                        self.add_block(block(**bc))
+                    except AttributeError:
+                        print('Block {} not found.'.format(block))
+                        pass
+                    except TypeError as e:
+                        print('Block {} configured incorrectly:\n'\
+                              .format(block) + str(e))
+                        pass
+
     def feed(self):
         return ''.join([b() for b in self.blocks]) + '\n'
 
     def start(self, feed_only=False):
+        for b in self.blocks:
+            if b.is_callback_block:
+                b.set_callbacks()
+
         if not feed_only:
             self.lemonbar = subprocess.Popen(self.command, stdin=subprocess.PIPE)
 
@@ -89,10 +110,13 @@ def main():
         print('Config file not found!')
         sys.exit(1)
     pprint(config.get('lemonbar'))
+    pprint(config.get('blocks'))
 
     # bar = Bar(delay=.1)
     bar = Bar(**config.get('lemonbar'))
+    bar.add_blocks_from_config(config.get('blocks'))
 
+    '''
     bar.add_blocks([
             blocks.Align('l'),
             blocks.Workspaces(monitor='eDP1',
@@ -115,6 +139,7 @@ def main():
             # blocks.Workspaces(monitor='DVI-I-0',
             #                   padding=(5, 2))
     ])
+    '''
 
     try:
         bar.start(feed_only=args.feed)

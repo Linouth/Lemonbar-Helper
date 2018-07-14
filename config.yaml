@@ -26,24 +26,32 @@ lemonbar:
 
 blocks:
     left:
-        workspaces: 
-            style: 'dots'
-            background: 'fg'
-            foreground: 'bg'
-            display: 'eDP1'
+        WorkspacesDots:
+            swap: True
+            margin: 0
+            padding: 2
             icons:
                 empty: 'o'
-                nonempty: 'x'
-                active: 'x'
-        music:
+                nonempty: '0'
+                visible: 'x'
+            underline: '#000'
+        Music:
             icon: 'p'
+            margin: 2
+
 
     center:
-        datetime:
-            format: '...'
+        Clock:
+            layout: '%d %b %Y %H:%M:%S'
 
     right:
         wifi: 'config'
-        volume: 'config'
-        memory: 'config'
+        Volume:
+            swap: True
+            interval: 1
+            padding: [2, 1]
+        Memory:
+            swap: True
+            interval: 5
+            padding: [1, 2]
         battery: 'config'

@@ -10,9 +10,16 @@ import subprocess
 from time import time
 from urllib.request import urlopen
 
+import gi
+gi.require_version('Playerctl', '1.0')
+from gi.repository import Playerctl
+
 
 class Base:
-    def __init__(self, icon='', interval=1, margin=0, padding=1, 
+    is_callback_block = False
+    display = True
+
+    def __init__(self, icon='', interval=1, margin=0, padding=0, 
                  foreground=None, background=None, swap=False):
         self.interval = interval
 
@@ -43,7 +50,7 @@ class Base:
     
     @staticmethod
     def __set_spacing(spacing, o):
-        if type(spacing) == tuple:
+        if type(spacing) == list:
             l = ' '*spacing[0]
             r = ' '*spacing[1]
         else:
@@ -53,6 +60,7 @@ class Base:
 
     def __call__(self):
         raise NotImplementedError('Function needs to be implemented')
+
 
 class Widget(Base):
     def __init__(self, **kwds):
@@ -69,7 +77,9 @@ class Widget(Base):
             self.update()
             self.prevtime = time()
 
-        return self.template.format(value=self.output)
+        if self.display:
+            return self.template.format(value=self.output)
+        return ''
 
     def update(self):
         raise NotImplementedError('Function needs to be implemented')
@@ -102,7 +112,7 @@ class Clock(Widget):
 class Volume(Widget):
     def update(self):
         m = Mixer()
-        self.output = m.getvolume()[0]
+        self.output = '{}%'.format(m.getvolume()[0])
 
 
 class ActiveWindow(Widget):
@@ -112,48 +122,35 @@ class ActiveWindow(Widget):
         self.output = self.i3.get_tree().find_focused().name
 
 
-class Workspaces(Widget):
+class WorkspacesDots(Widget):
     i3 = i3ipc.Connection()
 
-    def __init__(self, activeIco='|', inactiveIco='-', monitor=None, **kwds):
+    def __init__(self, underline=None,
+                 icons={'empty': 'o', 'nonempty': '0',
+                        'visible': 'x'}, **kwds):
         super().__init__(**kwds)
-        self.activeIco = activeIco
-        self.inactiveIco = inactiveIco
-        self.monitor = monitor
+        self.icons = icons
+        self.underline = underline
 
     def update(self):
-        self.output = ''
+        out = [self.icons['empty'] for __ in range(9)]
+        for workspace in self.i3.get_workspaces():
+            ind = int(workspace['num']) - 1
+            if ind < 0: ind = 10
+            
+            if workspace['visible']:
+                out[ind] = self.icons['visible']
+            else:
+                out[ind] = self.icons['nonempty']
 
-        if not self.monitor:
-            ws = self.i3.get_workspaces()
-            for w in ws:
-                if w['focused']:
-                    self.output += self.activeIco
-                else:
-                    self.output += self.inactiveIco
-        else:
-            for mon in self.i3.get_outputs():
-                if mon['name'] == self.monitor:
-                    self.output = mon['current_workspace']
+            if workspace['focused']:
+                out[ind] = '%{!u}' + out[ind] + '%{!u}'
 
-
-class Weather(Widget):
-    def __init__(self, location='amsterdam', units='metric', apikey=None,
-                 interval=600, **kwds):
-        super().__init__(interval=interval, **kwds)
-        self.apiurl = 'http://api.openweathermap.org/data/2.5/weather?'\
-                      'q={location}&APPID={apikey}&units={units}'
-        self.parameters = dict(
-                location=location,
-                units=units,
-                apikey=apikey
-        )
-
-    def update(self):
-        if self.parameters['apikey']:
-            res = urlopen(self.apiurl.format(**self.parameters))
-            data = json.loads(res.read().decode())
-            self.output = round(data['main']['temp'], 1)
+        self.output = ' '.join(out)
+        
+        if self.underline:
+            self.output = '%{{U{}}}'.format(self.underline)\
+                          + self.output + '%{U-}'
 
 
 class Memory(Widget):
