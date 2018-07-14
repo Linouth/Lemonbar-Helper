@@ -16,8 +16,8 @@ lemonbar:
 
     xresources: False
     colors:
-        foreground: '#fff'
-        background: '#000'
+        foreground: '$foreground'
+        background: '$background'
         highlights: '#fff'
 
     underline_thickness: 2
@@ -34,7 +34,7 @@ blocks:
                 empty: '○'
                 nonempty: '●'
                 visible: '●'
-            underline: '#000'
+            underline: '$background'
         Music:
             icon: '▶'
             margin: 2
