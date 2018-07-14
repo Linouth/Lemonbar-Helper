@@ -100,8 +100,11 @@ class Bar:
 def main():
     from pprint import pprint
     parser = argparse.ArgumentParser(description='Feed script for LemonBar')
-    parser.add_argument('-c', '--config', default='config.yaml', help='YAML Config file')
-    parser.add_argument('-f', '--feed', action='store_true', help='Only print feed data (don\'t start lemonbar')
+    parser.add_argument('-c', '--config', default='config.yaml',
+                        help='YAML Config file')
+    parser.add_argument('-f', '--feed', action='store_true',
+                        help='Only print feed data \
+                              (don\'t start lemonbar')
     args = parser.parse_args()
 
     try:
@@ -109,37 +112,9 @@ def main():
     except FileNotFoundError:
         print('Config file not found!')
         sys.exit(1)
-    pprint(config.get('lemonbar'))
-    pprint(config.get('blocks'))
 
-    # bar = Bar(delay=.1)
     bar = Bar(**config.get('lemonbar'))
     bar.add_blocks_from_config(config.get('blocks'))
-
-    '''
-    bar.add_blocks([
-            blocks.Align('l'),
-            blocks.Workspaces(monitor='eDP1',
-                              padding=2,
-                              margin=(0, 3),
-                              swap=True),
-            blocks.Raw(text='Notice the fog.'),
-            blocks.Volume(interval=1),
-
-            blocks.Align('c'),
-            blocks.Clock(swap=True),
-
-            blocks.Align('r'),
-            # blocks.Weather(location='haren,gn',
-            #                apikey='7c8ca2cd7dcab68d7f9e4d08a2a08595',
-            #                append='°C'),
-            blocks.Memory(),
-            blocks.IPAddress(interface='wlp1s0'),
-            blocks.Ping(host='vps298888.ovh.net'),
-            # blocks.Workspaces(monitor='DVI-I-0',
-            #                   padding=(5, 2))
-    ])
-    '''
 
     try:
         bar.start(feed_only=args.feed)

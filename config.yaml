@@ -45,7 +45,8 @@ blocks:
             layout: '%d %b %Y %H:%M:%S'
 
     right:
-        wifi: 'config'
+        Wifi:
+            interface: 'wlp1s0'
         Volume:
             swap: True
             interval: 1
@@ -53,5 +54,7 @@ blocks:
         Memory:
             swap: True
             interval: 5
+        Battery:
+            swap: True
+            power_supply: 'BAT1'
             padding: [1, 2]
-        battery: 'config'

@@ -115,13 +115,6 @@ class Volume(Widget):
         self.output = '{}%'.format(m.getvolume()[0])
 
 
-class ActiveWindow(Widget):
-    i3 = i3ipc.Connection()
-
-    def update(self):
-        self.output = self.i3.get_tree().find_focused().name
-
-
 class WorkspacesDots(Widget):
     i3 = i3ipc.Connection()
 
@@ -207,3 +200,52 @@ class Ping(Widget):
         else:
             self.output = 0
         self.output = str(self.output) + 'ms'
+
+
+class Music(Widget):
+    player = Playerctl.Player()
+
+    def update(self):
+        if self.player.get_property('status') == 'Playing':
+            self.display = True
+            self.output = '{} - {}'.format(self.player.get_artist(),
+                                           self.player.get_title())
+        else:
+            self.display = False
+
+
+class Battery(Widget):
+    ''' Load from sys class '''
+    def __init__(self, power_supply='BAT0',
+                 icons={'charging': 'c', 'discharging': 'd'}, **kwds):
+        super().__init__(**kwds)
+        self.power_supply = power_supply
+        self.icons = icons
+
+    def update(self):
+        with open('/sys/class/power_supply/{}/status'\
+                  .format(self.power_supply), 'r') as f:
+            charging = 'Charging' in f.read()
+
+        with open('/sys/class/power_supply/{}/capacity'\
+                  .format(self.power_supply), 'r') as f:
+            capacity = f.read()
+
+        if charging:
+            self.output = '{} '.format(self.icons['charging'])
+        else:
+            self.output = '{} '.format(self.icons['discharging'])
+        self.output += '{}%'.format(capacity)
+
+
+class Wifi(Widget):
+    def __init__(self, interface='wlan0', **kwds):
+        super().__init__(**kwds)
+        self.interface = interface
+
+    def update(self):
+        ssid = subprocess.check_output(['iw', 'dev', self.interface, 'info'])
+        for l in ssid.split(b'\n\t'):
+            if l.startswith(b'ssid'):
+                self.output = l[5:].decode()
+    
