@@ -1,14 +1,11 @@
 from alsaaudio import Mixer
 from datetime import datetime
-import fcntl
 import i3ipc
-import json
 import re
 import socket
 import struct
 import subprocess
 from time import time
-from urllib.request import urlopen
 
 import gi
 gi.require_version('Playerctl', '1.0')

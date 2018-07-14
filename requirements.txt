@@ -1,5 +1,7 @@
 enum-compat==0.0.2
-enum34==1.1.6
 i3ipc==1.2.0
 pyalsaaudio==0.8.2
+pycairo==1.17.1
+PyGObject==3.28.3
 python3-xlib==0.15
+PyYAML==3.13
