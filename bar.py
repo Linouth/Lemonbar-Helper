@@ -19,7 +19,7 @@ class Bar:
         #TODO:
         self.colors = self._load_xresources() if xresources else colors
 
-        self.command = 'lemonbar -d -p'.split()
+        self.command = 'lemonbar -p'.split()
         for font in self.fonts:
             self.command += ['-f', font['str'],
                              '-o', str(font['offset'])]
