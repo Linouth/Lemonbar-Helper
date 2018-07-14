@@ -234,7 +234,9 @@ class Battery(Widget):
         if charging:
             self.output = '{} '.format(self.icons['charging'])
         else:
-            self.output = '{} '.format(self.icons['discharging'])
+            num_of_icons = len(self.icons['discharging'])
+            ind = round(int(capacity)/100 * (num_of_icons-1))
+            self.output = '{} '.format(self.icons['discharging'][ind])
         self.output += '{}%'.format(capacity)
 
 

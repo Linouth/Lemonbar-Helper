@@ -62,7 +62,12 @@ blocks:
         Battery:
             icons: 
                 charging: ''
-                discharging: ''
+                discharging: 
+                    - ''
+                    - ''
+                    - ''
+                    - ''
+                    - ''
             swap: True
             power_supply: 'BAT1'
             padding: [1, 2]
