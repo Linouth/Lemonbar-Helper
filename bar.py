@@ -58,17 +58,22 @@ class Bar:
 
     def start(self, feed_only=False):
         if not feed_only:
-            lemonbar = subprocess.Popen(self.command, stdin=subprocess.PIPE)
+            self.lemonbar = subprocess.Popen(self.command, stdin=subprocess.PIPE)
 
         while True:
             if feed_only:
                 print(self.feed(), end='')
                 sys.stdout.flush()
+                self.lemonbar = None
             else:
-                lemonbar.stdin.write(self.feed().encode())
-                lemonbar.stdin.flush()
+                self.lemonbar.stdin.write(self.feed().encode())
+                self.lemonbar.stdin.flush()
 
             sleep(self.update_interval)
+
+    def kill(self):
+        if self.lemonbar:
+            self.lemonbar.kill()
 
 
 def main():
@@ -91,8 +96,10 @@ def main():
     bar.add_blocks([
             blocks.Align('l'),
             blocks.Workspaces(monitor='eDP1',
-                              padding=(2, 5)),
-            blocks.Static(text='Notice the fog.'),
+                              padding=2,
+                              margin=(0, 3),
+                              swap=True),
+            blocks.Raw(text='Notice the fog.'),
             blocks.Volume(interval=1),
 
             blocks.Align('c'),
@@ -102,17 +109,19 @@ def main():
             # blocks.Weather(location='haren,gn',
             #                apikey='7c8ca2cd7dcab68d7f9e4d08a2a08595',
             #                append='°C'),
-            blocks.Memory(append='M'),
+            blocks.Memory(),
             blocks.IPAddress(interface='wlp1s0'),
-            blocks.Ping(append='ms', host='vps298888.ovh.net'),
+            blocks.Ping(host='vps298888.ovh.net'),
             # blocks.Workspaces(monitor='DVI-I-0',
             #                   padding=(5, 2))
     ])
 
     try:
-        bar.start()
+        bar.start(feed_only=args.feed)
     except KeyboardInterrupt:
         print('Closing')
+    finally:
+        bar.kill()
 
 
 if __name__ == '__main__':

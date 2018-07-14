@@ -12,76 +12,85 @@ from urllib.request import urlopen
 
 
 class Base:
-    i3 = i3ipc.Connection()
-
-    def __init__(self, icon='', interval=1, padding=1, prepend='', append='',
+    def __init__(self, icon='', interval=1, margin=0, padding=1, 
                  foreground=None, background=None, swap=False):
-        self.__icon = icon
+        self.interval = interval
 
-        self.__template = '{lpadding}{prepend}{value}{append}{rpadding}'
-        self.__fg = lambda o: '%{{F{foreground}}}' + o + '%{{F-}}'
-        self.__bg = lambda o: '%{{B{background}}}' + o + '%{{B-}}'
-        self.__swap = lambda o: '%{{R}}' + o + '%{{R}}'
+        template = '{value}'
 
-        self.__interval = interval
-        self.__prevtime = 0
-        self.__padding = padding
-        self.__append = append
-        self.__prepend = prepend
+        # Set icon
+        if icon:
+            template = '{} '.format(icon) + template
 
-        self.foreground = foreground
-        self.background = background
-        self.swap = swap
+        # Set padding
+        if padding:
+            template = self.__set_spacing(padding, template)
 
+        # Setting colors
+        if foreground:
+            template = '%{{F{}}}'.format(foreground) + template + '%{{F-}}'
+        if background:
+            template = '%{{B{}}}'.format(background) + template + '%{{B-}}'
+        if swap:
+            template = '%{{R}}' + template + '%{{R}}'
+
+        # Set margin
+        if margin:
+            template = self.__set_spacing(margin, template)
+
+        self.template = template
         self.output = ''
+    
+    @staticmethod
+    def __set_spacing(spacing, o):
+        if type(spacing) == tuple:
+            l = ' '*spacing[0]
+            r = ' '*spacing[1]
+        else:
+            l = ' '*spacing
+            r = ' '*spacing
+        return l + o + r
 
     def __call__(self):
-        if self.__interval == -1:
+        raise NotImplementedError('Function needs to be implemented')
+
+class Widget(Base):
+    def __init__(self, **kwds):
+        super().__init__(**kwds)
+        self.prevtime = 0
+
+    def __call__(self):
+        if self.interval == -1:
             # Only call update once
-            if self.__prevtime != -1:
+            if self.prevtime != -1:
                 self.update()
-                self.__prevtime = -1
-        elif time() >= self.__prevtime + self.__interval:
+                self.prevtime = -1
+        elif time() >= self.prevtime + self.interval:
             self.update()
-            self.__prevtime = time()
+            self.prevtime = time()
 
-        conf = dict(
-                    foreground=self.foreground,
-                    background=self.background,
-
-                    lpadding=' ' * (self.__padding[0] if type(self.__padding)
-                                    == tuple else self.__padding),
-                    rpadding=' ' * (self.__padding[1] if type(self.__padding)
-                                    == tuple else self.__padding),
-                    icon=self.__icon,
-                    value=self.output,
-                    append=self.__append,
-                    prepend=self.__prepend
-        )
-
-        output = self.__template
-        if self.foreground:
-            output = self.__fg(output)
-        if self.background:
-            output = self.__bg(output)
-        if self.swap:
-            output = self.__swap(output)
-
-        return output.format_map(conf)
+        return self.template.format(value=self.output)
 
     def update(self):
         raise NotImplementedError('Function needs to be implemented')
 
 
-class Align:
-    def __init__(self, align):
-        self.__align = align
+class Raw(Base):
+    def __init__(self, text='', **kwds):
+        super().__init__(**kwds)
+        self.output = text
 
     def __call__(self):
-        return '%{{{}}}'.format(self.__align)
+        return self.template.format(value=self.output)
 
 
-class Clock(Base):
+class Align(Raw):
+    def __init__(self, align, **kwds):
+        super().__init__(**kwds)
+        self.output = '%{{{}}}'.format(align)
+
+
+class Clock(Widget):
     def __init__(self, layout='%d %b %Y %H:%M:%S', **kwds):
         super().__init__(**kwds)
         self.layout = layout
@@ -90,18 +99,22 @@ class Clock(Base):
         self.output = datetime.today().strftime(self.layout)
 
 
-class Volume(Base):
+class Volume(Widget):
     def update(self):
         m = Mixer()
         self.output = m.getvolume()[0]
 
 
-class ActiveWindow(Base):
+class ActiveWindow(Widget):
+    i3 = i3ipc.Connection()
+
     def update(self):
         self.output = self.i3.get_tree().find_focused().name
 
 
-class Workspaces(Base):
+class Workspaces(Widget):
+    i3 = i3ipc.Connection()
+
     def __init__(self, activeIco='|', inactiveIco='-', monitor=None, **kwds):
         super().__init__(**kwds)
         self.activeIco = activeIco
@@ -124,7 +137,7 @@ class Workspaces(Base):
                     self.output = mon['current_workspace']
 
 
-class Weather(Base):
+class Weather(Widget):
     def __init__(self, location='amsterdam', units='metric', apikey=None,
                  interval=600, **kwds):
         super().__init__(interval=interval, **kwds)
@@ -143,16 +156,7 @@ class Weather(Base):
             self.output = round(data['main']['temp'], 1)
 
 
-class Static(Base):
-    def __init__(self, text='', interval=-1, **kwds):
-        super().__init__(interval=interval, **kwds)
-        self.text = text
-
-    def update(self):
-        self.output = self.text
-
-
-class Memory(Base):
+class Memory(Widget):
     def __init__(self, percentage=False, interval=5, **kwds):
         super().__init__(interval=interval, **kwds)
         self.percentage = percentage
@@ -170,9 +174,10 @@ class Memory(Base):
         used_mb = round((total-available)/1024)
         used_perc = round((available/total)*100)
         self.output = used_perc if self.percentage else used_mb
+        self.output = str(self.output) + 'M'
 
 
-class IPAddress(Base):
+class IPAddress(Widget):
     def __init__(self, interface='eth0', interval=900, **kwds):
         super().__init__(interval=interval, **kwds)
         self.interface = interface.encode('utf-8')
@@ -189,7 +194,7 @@ class IPAddress(Base):
         self.output = get_ip_address(self.interface)
 
 
-class Ping(Base):
+class Ping(Widget):
     def __init__(self, host='8.8.8.8', interval=5, **kwds):
         super().__init__(interval=interval, **kwds)
         self.host = host
@@ -204,3 +209,4 @@ class Ping(Base):
             self.output = round(float(reg.groups()[0]))
         else:
             self.output = 0
+        self.output = str(self.output) + 'ms'
