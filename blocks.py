@@ -13,6 +13,7 @@ from gi.repository import Playerctl
 
 import sys
 
+
 class Base:
     is_callback_block = False
     display = True
@@ -25,17 +26,7 @@ class Base:
 
         # Set icon
         if icon:
-            icon_str = ''
-            if type(icon) == str:
-                icon_str = icon
-            elif type(icon) == dict:
-                icon_str = icon['str']
-                if icon.get('foreground'):
-                    icon_str = self.__set_foreground(icon_str,
-                                                     icon['foreground'])
-                if icon.get('background'):
-                    icon_str = self.__set_background(icon_str,
-                                                     icon['background'])
+            icon_str = self.format_icon(icon)
             template = f'{icon_str} {template}'
 
         # Set padding
@@ -74,6 +65,21 @@ class Base:
     @staticmethod
     def __set_background(string, color):
         return f'%{{B{color}}}{string}%{{B-}}'
+
+    @staticmethod
+    def format_icon(icon_obj):
+        icon_str = ''
+        if type(icon_obj) == str:
+            icon_str = icon_obj
+        elif type(icon_obj) == dict:
+            icon_str = icon_obj['str']
+            if icon_obj.get('foreground'):
+                icon_str = Base.__set_foreground(icon_str,
+                                                 icon_obj['foreground'])
+            if icon_obj.get('background'):
+                icon_str = Base.__set_background(icon_str,
+                                                 icon_obj['background'])
+        return icon_str
 
     def __call__(self):
         raise NotImplementedError('Function needs to be implemented')
@@ -144,15 +150,18 @@ class WorkspacesDots(Widget):
                  icons={'empty': 'o', 'nonempty': '0',
                         'visible': 'x'}, **kwds):
         super().__init__(**kwds)
-        self.icons = icons
+        self.icons = {}
+        for k, icon in icons.items():
+            self.icons[k] = self.format_icon(icon)
         self.underline = underline
 
     def update(self):
         out = [self.icons['empty'] for __ in range(10)]
         for workspace in self.i3.get_workspaces():
             ind = int(workspace['num']) - 1
-            if ind < 0: ind = 9
-            
+            if ind < 0:
+                ind = 9
+
             if workspace['visible']:
                 out[ind] = self.icons['visible']
             else:
@@ -161,8 +170,8 @@ class WorkspacesDots(Widget):
             if workspace['focused']:
                 out[ind] = '%{!u}' + out[ind] + '%{!u}'
 
-        self.output = ' '.join(out)
-        
+        self.output = ''.join(out)
+
         if self.underline:
             self.output = '%{{U{}}}'.format(self.underline)\
                           + self.output + '%{U-}'
