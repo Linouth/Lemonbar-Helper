@@ -11,12 +11,13 @@ import gi
 gi.require_version('Playerctl', '1.0')
 from gi.repository import Playerctl
 
+import sys
 
 class Base:
     is_callback_block = False
     display = True
 
-    def __init__(self, icon='', interval=1, margin=0, padding=0, 
+    def __init__(self, icon='', interval=1, margin=0, padding=0,
                  foreground=None, background=None, swap=False):
         self.interval = interval
 
@@ -24,7 +25,18 @@ class Base:
 
         # Set icon
         if icon:
-            template = '{} '.format(icon) + template
+            icon_str = ''
+            if type(icon) == str:
+                icon_str = icon
+            elif type(icon) == dict:
+                icon_str = icon['str']
+                if icon.get('foreground'):
+                    icon_str = self.__set_foreground(icon_str,
+                                                     icon['foreground'])
+                if icon.get('background'):
+                    icon_str = self.__set_background(icon_str,
+                                                     icon['background'])
+            template = f'{icon_str} {template}'
 
         # Set padding
         if padding:
@@ -32,9 +44,9 @@ class Base:
 
         # Setting colors
         if foreground:
-            template = '%{{F{}}}'.format(foreground) + template + '%{{F-}}'
+            template = self.__set_foreground(template, foreground)
         if background:
-            template = '%{{B{}}}'.format(background) + template + '%{{B-}}'
+            template = self.__set_background(template, background)
         if swap:
             template = '%{{R}}' + template + '%{{R}}'
 
@@ -55,8 +67,21 @@ class Base:
             r = ' '*spacing
         return l + o + r
 
+    @staticmethod
+    def __set_foreground(string, color):
+        return f'%{{F{color}}}{string}%{{F-}}'
+
+    @staticmethod
+    def __set_background(string, color):
+        return f'%{{B{color}}}{string}%{{B-}}'
+
     def __call__(self):
         raise NotImplementedError('Function needs to be implemented')
+
+    class SafeDict(dict):
+        ''' Dict that leaves missing format keys as is '''
+        def __missing__(self, key):
+            return '{' + key + '}'
 
 
 class Widget(Base):
@@ -75,7 +100,7 @@ class Widget(Base):
             self.prevtime = time()
 
         if self.display:
-            return self.template.format(value=self.output)
+            return self.template.format_map(self.SafeDict(value=self.output))
         return ''
 
     def update(self):
@@ -88,7 +113,7 @@ class Raw(Base):
         self.output = text
 
     def __call__(self):
-        return self.template.format(value=self.output)
+        return self.template.format_map(self.SafeDict(value=self.output))
 
 
 class Align(Raw):
