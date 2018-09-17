@@ -148,12 +148,13 @@ class WorkspacesDots(Widget):
 
     def __init__(self, underline=None,
                  icons={'empty': 'o', 'nonempty': '0',
-                        'visible': 'x'}, **kwds):
+                        'visible': 'x'}, spacing=0, **kwds):
         super().__init__(**kwds)
         self.icons = {}
         for k, icon in icons.items():
             self.icons[k] = self.format_icon(icon)
         self.underline = underline
+        self.spacing = spacing
 
     def update(self):
         out = [self.icons['empty'] for __ in range(10)]
@@ -170,7 +171,7 @@ class WorkspacesDots(Widget):
             if workspace['focused']:
                 out[ind] = '%{!u}' + out[ind] + '%{!u}'
 
-        self.output = ''.join(out)
+        self.output = (' '*self.spacing).join(out)
 
         if self.underline:
             self.output = '%{{U{}}}'.format(self.underline)\
