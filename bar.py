@@ -2,7 +2,7 @@ import argparse
 import blocks
 import subprocess
 import sys
-from time import sleep
+import time
 from yaml import load
 
 
@@ -32,6 +32,9 @@ class Bar:
 
         self.callback_blocks = []
         self.blocks = []
+
+        self.__prev_time = 0
+        self.refresh = False
 
     def _load_xresources(self):
         # TODO
@@ -82,15 +85,16 @@ class Bar:
             self.lemonbar = subprocess.Popen(self.command, stdin=subprocess.PIPE)
 
         while True:
-            if feed_only:
-                print(self.feed(), end='')
-                sys.stdout.flush()
-                self.lemonbar = None
-            else:
-                self.lemonbar.stdin.write(self.feed().encode())
-                self.lemonbar.stdin.flush()
-
-            sleep(self.update_interval)
+            if (self.__prev_time + self.update_interval <= time.time()) or self.refresh:
+                if feed_only:
+                    print(self.feed(), end='')
+                    sys.stdout.flush()
+                    self.lemonbar = None
+                else:
+                    self.lemonbar.stdin.write(self.feed().encode())
+                    self.lemonbar.stdin.flush()
+                self.refresh = False
+            time.sleep(0.1)
 
     def kill(self):
         if self.lemonbar:

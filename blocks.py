@@ -94,6 +94,7 @@ class Widget(Base):
     def __init__(self, **kwds):
         super().__init__(**kwds)
         self.prevtime = 0
+        self.refresh = False
 
     def __call__(self):
         if self.interval == -1:
@@ -101,9 +102,10 @@ class Widget(Base):
             if self.prevtime != -1:
                 self.update()
                 self.prevtime = -1
-        elif time() >= self.prevtime + self.interval:
+        elif (time() >= self.prevtime + self.interval) or self.refresh:
             self.update()
             self.prevtime = time()
+            self.refresh = False
 
         if self.display:
             return self.template.format_map(self.SafeDict(value=self.output))
