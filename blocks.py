@@ -278,7 +278,10 @@ class Wifi(Widget):
         self.interface = interface
 
     def update(self):
-        ssid = subprocess.check_output(['iw', 'dev', self.interface, 'info'])
-        for l in ssid.split(b'\n\t'):
-            if l.startswith(b'ssid'):
-                self.output = l[5:].decode()
+        try:
+            ssid = subprocess.check_output(['iw', 'dev', self.interface, 'info'])
+            for l in ssid.split(b'\n\t'):
+                if l.startswith(b'ssid'):
+                    self.output = l[5:].decode()
+        except subprocess.CalledProcessError:
+            self.output = 'Interface N/A'
