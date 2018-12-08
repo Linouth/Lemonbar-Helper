@@ -9,11 +9,25 @@ from yaml import load
 class Bar:
     def __init__(self, update_interval=1, offset={'x':0, 'y':0},
                  dimensions={'w':'all', 'h':20}, fonts=None,
-                 xresources=True, colors=None, underline_thickness=1):
+                 xresources=True, colors=None, underline_thickness=1, args=None):
+        self.args = args
         self.update_interval = update_interval
 
-        self.offset = offset
-        self.dimensions = dimensions
+        if args.geometry:
+            # Force geometry
+            tmp = args.geometry.split('+')
+            offset = tmp[1:]
+            dimensions = tmp[0].split('x')
+            if offset:
+                self.offset = {'x': offset[0], 'y': offset[1]}
+            else:
+                self.offset = {'x': 0, 'y': 0}
+            self.dimensions = {'w': dimensions[0], 'h': dimensions[1]}
+        else:
+            # Geometry from config
+            self.offset = offset
+            self.dimensions = dimensions
+
         self.fonts = fonts
         self.underline_thickness = underline_thickness
         #TODO:
@@ -109,6 +123,8 @@ def main():
     parser.add_argument('-f', '--feed', action='store_true',
                         help='Only print feed data \
                               (don\'t start lemonbar')
+    parser.add_argument('-g', '--geometry', default=None,
+                        help='Geometry of lemonbar, example: (w)x(h)+(x)+(y). None for config')
     args = parser.parse_args()
 
     try:
@@ -117,7 +133,7 @@ def main():
         print('Config file not found!')
         sys.exit(1)
 
-    bar = Bar(**config.get('lemonbar'))
+    bar = Bar(**config.get('lemonbar'), args=args)
     bar.add_blocks_from_config(config.get('blocks'))
 
     try:
